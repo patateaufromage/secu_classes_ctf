@@ -39,7 +39,8 @@ struct chunk *get_last_chunk_raw()
 	// tant que item est du meme type que heap, que sa taille ne depasse pas la taille de la heap totale, alors on le decale de chunk + size allouee:
 	for (struct chunk *item = heap; (size_t)item < (size_t)heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
 	{
-		printf("[___] Checking for last chunk, item @ %p - size %lu - flag %u\n", item, item->size, item->flags);
+		printf("[_] Checking for last chunk, item @ %p - size %lu - flag %u\n", item, item->size, item->flags);
+		printf("[_] (size_t)item = %lu - size_t(heap) = %lu", (size_t)item, (size_t)heap);
 		// si on reach la fin de la heap, on return aka on ret 
 		if ((size_t)item + sizeof(struct chunk) + item->size >= (size_t)heap + heap_size)
 		{	
@@ -90,7 +91,7 @@ struct chunk *get_free_chunk(size_t size)
 		// For mmap(), offset must be a multiple of the underlying huge page size.  The system automatically aligns length to be a multiple of the underlying huge page size.
 	if (item == NULL)
 	{
-		printf("[!!!] Memory space not enough,  item value returned was %p ... RESIZING !\n", item);
+		printf("[!] Memory space not enough,  item value returned was %p ... RESIZING !\n", item);
 
 		// preparation pour allocation de taille superieure a 4096:
 		size_t total_size = size + sizeof(struct chunk);
@@ -103,11 +104,11 @@ struct chunk *get_free_chunk(size_t size)
 
 		// on ajoute la nouvelle partie de heap:
 		heap_size += delta_size;
-		printf("HEAP new size will be : %lu\n", heap_size);
+		printf("[!] HEAP new size will be : %lu\n", heap_size);
 
 		// on remap l'ancienne heap (de size old_size) pour y inclure la nouvelle size associee a heap_size, et on l'associe a new_heap:
 		struct chunk *new_heap = mremap(heap, old_size, heap_size, MREMAP_MAYMOVE);
-		printf("Remap done, resized, value is : %p\n", new_heap);
+		printf("[!] Remap done, resized, value is : %p\n", new_heap);
 		
 		// on check si la nouvelle heap pointe au meme endroit que lancienne, si cest pas le cas on fait pointer vers NULL pour choper un espace memoire auto quand mmap sera appele:
 		if (new_heap != heap)
@@ -115,7 +116,7 @@ struct chunk *get_free_chunk(size_t size)
 
 		// on rajoute la delta_size precedemment calculee, ce qui permet de definir la taille du last item comme etant  agrandie:
 		last_item->size += delta_size; 
-		printf("RESIZING DONE, last_item now @ %p - size : %lu - flag : %u\n", last_item, last_item->size, last_item->flags);
+		printf("[!] RESIZING DONE, last_item now @ %p - size : %lu - flag : %u\n", last_item, last_item->size, last_item->flags);
 		
 		// on reassocie item via get free chunk raw ce qui permet de lui redonner la nouvelle addresse calculee, a savoir, item sera place au debut de l'element libre nouvellement cree:
 		item = get_free_chunk_raw(size);
@@ -128,7 +129,7 @@ struct chunk *get_free_chunk(size_t size)
 void *my_alloc(size_t size) {
 	// on cast size en void au cas on ne sen sert pas dans la fonction, afin de ne pas creer derreur de compilo 
 	(void) size;
-	printf("[***] my_alloc will be tried using size %lu\n", size);
+	printf("[*] my_alloc will be tried using size %lu\n", size);
 	void *ptr;
 	
 	// ch qui contiendra les metadatas, pointera vers le debut de l'emplacement libre de taille passee en argument
@@ -137,7 +138,7 @@ void *my_alloc(size_t size) {
 	// ptr pointera vers la fin du chunk libre de taille passee en argument
 	// on cast l'ensemble en void* pour pouvoir output dans le meme type que ptr
 	ptr = (void*) ((size_t)ch + sizeof(struct chunk));
-	printf("ptr pointe vers fin du chunk libre, de taille %lu passee en argument, localise @ %p\n", size, ptr);
+	printf("[*] ptr pointe vers fin du chunk libre, de taille %lu passee en argument, localise @ %p\n", size, ptr);
 	
 	// on associe la toute fin de la heap au pointer end:
 	struct chunk *end = (struct chunk*) ((size_t)ptr + size);
@@ -161,7 +162,7 @@ void clean(void *ptr)
 	// merge les chunks consecutifs
 	for (struct chunk *item = heap; (size_t)item < (size_t)heap + heap_size; item = (struct chunk *) ((size_t)item + item->size + sizeof(struct chunk)))
 	{
-		printf("[...] CLEANING ? checking chunk @ %p - size %lu - flag %u\n", item, item->size, item->flags);
+		printf("[.] CLEANING ? checking chunk @ %p - size %lu - flag %u\n", item, item->size, item->flags);
 		if (item->flags == FREE)
 		{
 			// voir les blocs consecutifs
