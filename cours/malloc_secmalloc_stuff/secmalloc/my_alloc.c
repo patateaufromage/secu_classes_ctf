@@ -20,11 +20,12 @@ struct chunk *init_meta_heap()
 	if (meta_heap= NULL)
 	{
 		meta_heap = mmap( (void*) (PAGE_SIZE * 100000), meta_heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0 );
-
 		meta_heap->size = meta_heap_size;
 		meta_heap->flags = FREE;  
+		meta_heap->prev = NULL;
+		meta_heap->data_addr = NULL;
+		meta_heap->next = NULL;
 	}
-
 	return meta_heap;
 }
 
@@ -34,11 +35,12 @@ struct chunk *init_data_heap()
 	if (data_heap == NULL)
 	{
 		data_heap = mmap( (void*) (PAGE_SIZE * 100000), data_heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0 );
-
-		data_heap->size = heap_size;
-		data_heap->flags = FREE;  // FREE = 0
+		data_heap->size = data_heap_size;
+		data_heap->flags = FREE;
+		data_heap->prev = NULL;
+		data_heap->data_addr = NULL;
+		data_heap->next = NULL;
 	}
-
 	return data_heap;
 }
 
@@ -47,16 +49,14 @@ struct chunk *init_data_heap()
 // called using get_free_chunk()
 struct chunk *get_last_chunk_raw()
 {
-	// item est un pointer et va nous servir a nous ballader dans la heap, et donc on le declare comme egal a la heap en tous points.
-	// la condition for: pour item du meme type que heap, tant qu'il ne pointe pas plus loin que heap + 4096, alors on le decale de chunk + size allouee:
-	for (struct chunk *item = heap; (size_t)item < (size_t)heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
+	for (struct chunk *item = meta_heap; (size_t)item < (size_t)meat_heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
 	{
 
 		printf("[_] Looking for last chunk ... item @ %p ... moving item until end\n", item);
 		printf("[_] End reached @ %p !\n", (struct chunk *) ((size_t)item + item->size + sizeof(struct chunk)));
 		
 		// si on reach la fin de la heap, on return item: 
-		if ((size_t)item + sizeof(struct chunk) + item->size >= (size_t)heap + heap_size)
+		if ((size_t)item + sizeof(struct chunk) + item->size >= (size_t)meta_heap + meta_heap_size)
 		{	
 			printf("[_] Space not sufficient for allocation, resizing !\n");		
 			return item;
@@ -75,15 +75,16 @@ struct chunk *get_last_chunk_raw()
 struct chunk *get_free_chunk_raw(size_t size)
 {
 	// si la heap n'a pas ete initialisee dans get_free_chunk(), on le fait ici:
-	if (heap == NULL)
+	if (meta_heap == NULL && data_heap == NULL)
 	{
-		heap = init_heap();
-		printf("[+] get_free_chunk_raw() initialised heap @ %p\n", heap); 
-		printf("[+] Data size available = %lu - flag = %u\n", heap->size, heap->flags);
+		meta_heap = init_meta_heap();
+		data_heap = init_data_heap();
+		printf("[!] get_free_chunk() initialised meta_heap && data_heap !!\n");
+		printf("[!] Beggining of meta space @ %p and data space @ %p\n", meta_heap, data_heap);
 	}
 	
 	// on deplace item vers la fin de l'espace de base alloue:
-	for (struct chunk *item = heap; (size_t)item < (size_t)heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
+	for (struct chunk *item = meta_heap; (size_t)item < (size_t)meat_heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
 	{
 		printf("[+] End of allocated space found @ %p\n", (struct chunk *) ((size_t)item + item->size + sizeof(struct chunk)));
 		printf("[+] ... Checking for free blocks ...\n");
@@ -112,8 +113,6 @@ struct chunk *get_free_chunk(size_t size)
 		data_heap = init_data_heap();
 		printf("[!] get_free_chunk() initialised meta_heap && data_heap !!\n");
 		printf("[!] Beggining of meta space @ %p and data space @ %p\n", meta_heap, data_heap);
-		//printf("[!] Chunk size = %lu\n", sizeof(struct chunk));
-		//printf("[!] Data size available = %lu - flag = %u\n", heap->size, heap->flags); 
 	}
 
 	// creation de item, associe au debut de l'espace memoire libre restant.
