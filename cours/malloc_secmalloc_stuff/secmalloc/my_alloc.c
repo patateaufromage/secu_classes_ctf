@@ -11,14 +11,15 @@ struct chunk *meta_heap = NULL;
 struct chunk *data_heap = NULL;
 
 
-size_t meat_heap_size = 4096;
+size_t meta_heap_size = 4096;
 size_t data_heap_size = 4096;
 
 
 struct chunk *init_meta_heap()
 {
-	if (meta_heap= NULL)
+	if (meta_heap == NULL)
 	{
+		// de base heap address sera 0x186a0000 = 409 600 000 en decimal
 		meta_heap = mmap( (void*) (PAGE_SIZE * 100000), meta_heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0 );
 		meta_heap->size = meta_heap_size;
 		meta_heap->flags = FREE;  
@@ -34,6 +35,7 @@ struct chunk *init_data_heap()
 {
 	if (data_heap == NULL)
 	{
+		// du coup where is data_heap ??
 		data_heap = mmap( (void*) (PAGE_SIZE * 100000), data_heap_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0 );
 		data_heap->size = data_heap_size;
 		data_heap->flags = FREE;
@@ -49,7 +51,7 @@ struct chunk *init_data_heap()
 // called using get_free_chunk()
 struct chunk *get_last_chunk_raw()
 {
-	for (struct chunk *item = meta_heap; (size_t)item < (size_t)meat_heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
+	for (struct chunk *item = meta_heap; (size_t)item < (size_t)meta_heap + meta_heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
 	{
 
 		printf("[_] Looking for last chunk ... item @ %p ... moving item until end\n", item);
@@ -84,7 +86,7 @@ struct chunk *get_free_chunk_raw(size_t size)
 	}
 	
 	// on deplace item vers la fin de l'espace de base alloue:
-	for (struct chunk *item = meta_heap; (size_t)item < (size_t)meat_heap + heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
+	for (struct chunk *item = meta_heap; (size_t)item < (size_t)meta_heap + meta_heap_size; item = (struct chunk *) ((size_t)item + sizeof(struct chunk) + item->size))
 	{
 		printf("[+] End of allocated space found @ %p\n", (struct chunk *) ((size_t)item + item->size + sizeof(struct chunk)));
 		printf("[+] ... Checking for free blocks ...\n");
@@ -115,8 +117,11 @@ struct chunk *get_free_chunk(size_t size)
 		printf("[!] Beggining of meta space @ %p and data space @ %p\n", meta_heap, data_heap);
 	}
 
+	// on rempli le premier bloc de meta avec laddresse maintenant connue de data_ptr:
+	//meta_heap->
+
 	// creation de item, associe au debut de l'espace memoire libre restant.
-	struct chunk *meta_ptr = get_free_chunk_raw(size); // malloc(8192) retournera NULL
+	struct chunk *item = get_free_chunk_raw(size); // malloc(8192) retournera NULL
 
 	if (item == NULL)
 	{
@@ -128,7 +133,7 @@ struct chunk *get_free_chunk(size_t size)
 		// malloc(8192) fera: total_size = 8192 + 16 = 8208
 		size_t total_size = size + sizeof(struct chunk);
 		// malloc(8192) fera: old_size = 4096
-		size_t old_size = heap_size;
+		size_t old_size = meta_heap_size;
 		
 		// delta_size sera un multiple de 4096:
 		// ((total_size % 4096 != 0) ? 1 : 0) will check if the remainder is non zero, and return 1 if True
@@ -138,16 +143,16 @@ struct chunk *get_free_chunk(size_t size)
 		// on ajoute la nouvelle partie de heap:
 		// 4096 += 12288 = 16384
 		// lionel used this formula, which is useless actually : heap_size += delta_size;
-		heap_size = delta_size; // this one is enough, the paging needs to be a multiple of 4096, but we wanna create as less unused space as possible !
+		meta_heap_size = delta_size; // this one is enough, the paging needs to be a multiple of 4096, but we wanna create as less unused space as possible !
 		// heap_size = 12288
-		printf("[!] HEAP new size will be : %lu\n", heap_size);
+		printf("[!] HEAP new size will be : %lu\n", meta_heap_size);
 
 		// on remap l'ancienne heap (de size old_size) pour remplacer sa size par la nouvelle size calculee:
-		struct chunk *new_heap = mremap(heap, old_size, heap_size, MREMAP_MAYMOVE);
-		printf("[!] Remap DONE, new_heap points to %p\n", new_heap);
+		struct chunk *new_meta_heap = mremap(meta_heap, old_size, meta_heap_size, MREMAP_MAYMOVE);
+		printf("[!] Remap DONE, new_heap points to %p\n", new_meta_heap);
 		
 		// check si la nouvelle heap pointe au meme endroit que lancienne, sinon on return NULL, qui sera utilise via get_free_chunk_raw(size) pour reinit une heap: 
-		if (new_heap != heap)
+		if (new_meta_heap != meta_heap)
 			return NULL;
 
 		// on rajoute la delta_size precedemment calculee pour deplacer last_item au dernier bloc: 

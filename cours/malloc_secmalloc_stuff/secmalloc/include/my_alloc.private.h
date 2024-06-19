@@ -16,10 +16,10 @@ struct chunk
 {
 	size_t size;
 	enum chunk_type flags;
-	//int canary;
-	struct chunk *data_addr;
-	struct chunk *next;
+	int canary;
 	struct chunk *prev;
+	struct chunk *next;
+	struct chunk *data_addr;
 };
 
 
