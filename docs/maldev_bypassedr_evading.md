@@ -1,7 +1,5 @@
 # Malware Development and Evasion Techniques Ressources
 
-## List of Links
-
 1. **[Return Address Spoofing](https://www.unknowncheats.me/forum/anti-cheat-bypass/268039-x64-return-address-spoofing-source-explanation.html)**: Explains techniques for return address spoofing in the context of bypassing anti-cheat mechanisms.
 2. **[Sandbox code snippets for each language](https://github.com/Arvanaghi/CheckPlease)**: A repository of sandbox code snippets across different programming languages for security testing.
 3. **[Tricks for Anti-Debug](https://anti-debug.checkpoint.com/)**: A collection of techniques used to prevent or detect debugging attempts.
