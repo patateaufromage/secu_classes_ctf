@@ -1,4 +1,4 @@
-# Malware Development and Evasion Techniques Resources
+# Malware Development and Evasion Techniques Ressources
 
 ## List of Links
 
