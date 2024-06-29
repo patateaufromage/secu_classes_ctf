@@ -1,7 +1,9 @@
 ; int execve(const char *pathname, char *const argv[], char *const envp[]);
 ;     EAX                 EBX                 ECX                 EDX
-; We can setup the two last args as NULL and pass /bin/sh as first (remeber its a filename and should end with a NULL terminator).
-; We will place the syscall number of execve in EAX, and the full path of /bin/sh into EBX, a NULL in ECX and a NULL in EDX.
+; We setup the two last args aka ECX and EDX as NULL bcz we dont use them
+; we pass /bin/sh in EBX (its a filename and should end with a NULL terminator).
+; we pass 11 in EAX which is execve syscall value
+
 
 
 global _start
