@@ -16,8 +16,8 @@ _start:
 	mov al, 11              ; syscall value for execve(), need to be in EAX
 	
 	push edx                ; 0      => EDX contains the "\0" null terminator that will be taken after /bin//sh to produce '/bin//sh\0' 
-	push 0x68732f2f         ; hs//
-	push 0x6e69622f         ; nib/   =>  after executing this instruction esp will point to /bin//sh
+	push 0x68732f2f         ; hs//   => it will appear like this on the stack, not in reversed order.
+	push 0x6e69622f         ; nib/   => after executing this instruction esp will point to /bin//sh
 	
 	mov ebx, esp            ; ebx will now point to /bin//sh 
 	
